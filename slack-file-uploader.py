@@ -5,11 +5,13 @@ import ConfigParser
 import argparse
 
 
-# Get credentials and defaults
-def get_params(section, key):
-    config = ConfigParser.RawConfigParser()
-    config.read('creds.cfg')
-    return config.get(section, key)
+# Get defaults and credentials
+config = ConfigParser.RawConfigParser()
+config.read('creds.cfg')
+default_channel = config.get('defaults', 'default_channel')
+default_member = config.get('defaults', 'default_member')
+default_uploader = config.get('defaults', 'default_uploader')
+
 
 # Create a new argument parser
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description='''
@@ -18,17 +20,17 @@ All params saved in creds.cfg
 ''')
 parser.add_argument('--channel', type=str,
                     help='name of channel to which file is to be uploaded',
-                    default=get_params('defaults', 'default_channel'),
+                    default=default_channel,
                     metavar='<channel>')
 
 parser.add_argument('--member', type=str,
                     help='name of human who is member of the channel',
-                    default=get_params('defaults', 'default_member'),
+                    default=default_member,
                     metavar='<member>')
 
 parser.add_argument('--uploader', type=str,
                     help='name of human or bot who will upload file to channel and not necessary to be a member of the channel',
-                    default=get_params('defaults', 'default_uploader'),
+                    default=default_uploader,
                     metavar='<uploader>')
 
 parser.add_argument('file', type=str, nargs="+",
@@ -39,7 +41,7 @@ args = parser.parse_args()
 
 
 # Get channel id
-member_token = get_params('tokens', args.member)
+member_token = config.get('tokens', args.member)
 member_slacker = Slacker(member_token)
 channels_list = member_slacker.channels.list().body.get('channels')
 channel_id = utils.get_item_id_by_name(channels_list, args.channel)
@@ -56,7 +58,7 @@ else:
     member_slacker.channels.invite(channel_id, uploader_id)
 
 # Uploader uploads files to channel
-uploader_token = get_params('tokens', args.uploader)
+uploader_token = config.get('tokens', args.uploader)
 uploader_slacker = Slacker(uploader_token)
 for file_ in args.file:
     uploader_slacker.files.upload(file_, channels=args.channel)
