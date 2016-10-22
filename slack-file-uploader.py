@@ -43,19 +43,29 @@ args = parser.parse_args()
 # Get channel id
 member_token = config.get('tokens', args.member)
 member_slacker = Slacker(member_token)
-channels_list = member_slacker.channels.list().body.get('channels')
-channel_id = utils.get_item_id_by_name(channels_list, args.channel)
+public_channels_list = member_slacker.channels.list().body.get('channels')
+private_channels_list = member_slacker.groups.list().body.get('groups')
+channel_id = utils.get_item_id_by_name(public_channels_list, args.channel)
+channel_type = 'public'
+if channel_id is None:
+    channel_id = utils.get_item_id_by_name(private_channels_list, args.channel)
+    channel_type = 'private'
 
 # Get uploader id
 users_list = member_slacker.users.list().body.get('members')
 uploader_id = utils.get_item_id_by_name(users_list, args.uploader)
 
 # Invite uploader to channel if not a member
-channel_members = member_slacker.channels.info(channel_id).body.get('channel')['members']
+if channel_type == 'public':
+    channel_members = member_slacker.channels.info(channel_id).body.get('channel')['members']
+else:
+    channel_members = member_slacker.groups.info(channel_id).body.get('group')['members']
 if uploader_id in channel_members:
     pass
-else:
+elif channel_type == 'public':
     member_slacker.channels.invite(channel_id, uploader_id)
+else:
+    member_slacker.groups.invite(channel_id, uploader_id)
 
 # Uploader uploads files to channel
 uploader_token = config.get('tokens', args.uploader)
